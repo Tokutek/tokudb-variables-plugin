@@ -12,6 +12,7 @@
 
 // can not access globals from other plugins
 // extern struct st_mysql_sys_var *tokudb_system_variables[];
+// use gdb to patch in the variables address in the tokudb_variables_fill_table function
 
 static char *tokudb_variables_version;
 
@@ -229,6 +230,7 @@ static int tokudb_variables_fill_table(THD *thd, TABLE_LIST *tables, COND *cond)
     TABLE *table = tables->table;
     struct st_mysql_sys_var **variables = tokudb_variables_variables;
     struct st_mysql_sys_var *var;
+    // NOTE: can use gdb to set variables to something else here
     for (uint i = 0; error == 0 && (var = variables[i]); i++) {
         String doc = var_json(var);
         table->field[0]->store(doc.c_ptr(), doc.length(), system_charset_info);
