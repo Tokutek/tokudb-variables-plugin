@@ -77,9 +77,15 @@ static void append_attr(String &s, const char *k, const char *v) {
     append_attr(s, k, true, v, true);
 }
 
-static void append_numeric_attr(String &s, const char *k, ulonglong v, bool is_unsigned) {
+static void append_int_attr(String &s, const char *k, ulonglong v, bool is_unsigned) {
     String t;
     t.set_int(v, is_unsigned, system_charset_info);
+    append_attr(s, k, true, t.c_ptr(), false);
+}
+
+static void append_double_attr(String &s, const char *k, double v) {
+    String t;
+    t.set_real(v, 1, system_charset_info);
     append_attr(s, k, true, t.c_ptr(), false);
 }
 
@@ -104,6 +110,8 @@ struct fake_st_mysql_sys_var {
         thdvar_longlong_t thd_longlong;
         sysvar_ulonglong_t sys_ulonglong;
         thdvar_ulonglong_t thd_ulonglong;
+        sysvar_double_t sys_double;
+        thdvar_double_t thd_double;
     } u;
 
     const char *name();
@@ -153,31 +161,31 @@ String fake_st_mysql_sys_var::type_attributes() {
     case PLUGIN_VAR_INT: {
         append_attr(s, "type", is_unsigned ? "uint" : "int");
         s.append(",");
-        append_numeric_attr(s, "def_val", thdlocal() ? u.thd_uint.def_val : u.sys_uint.def_val, is_unsigned);
+        append_int_attr(s, "def_val", thdlocal() ? u.thd_uint.def_val : u.sys_uint.def_val, is_unsigned);
         s.append(",");
-        append_numeric_attr(s, "min_val", thdlocal() ? u.thd_uint.min_val : u.sys_uint.min_val, is_unsigned);
+        append_int_attr(s, "min_val", thdlocal() ? u.thd_uint.min_val : u.sys_uint.min_val, is_unsigned);
         s.append(",");
-        append_numeric_attr(s, "max_val", thdlocal() ? u.thd_uint.max_val : u.sys_uint.max_val, is_unsigned);
+        append_int_attr(s, "max_val", thdlocal() ? u.thd_uint.max_val : u.sys_uint.max_val, is_unsigned);
         break;
     }
     case PLUGIN_VAR_LONG: {
         append_attr(s, "type", is_unsigned ? "ulong" : "long");
         s.append(",");
-        append_numeric_attr(s, "def_val", thdlocal() ? u.thd_ulong.def_val : u.sys_ulong.def_val, is_unsigned);
+        append_int_attr(s, "def_val", thdlocal() ? u.thd_ulong.def_val : u.sys_ulong.def_val, is_unsigned);
         s.append(",");
-        append_numeric_attr(s, "min_val", thdlocal() ? u.thd_ulong.min_val : u.sys_ulong.min_val, is_unsigned);
+        append_int_attr(s, "min_val", thdlocal() ? u.thd_ulong.min_val : u.sys_ulong.min_val, is_unsigned);
         s.append(",");
-        append_numeric_attr(s, "max_val", thdlocal() ? u.thd_ulong.max_val : u.sys_ulong.max_val, is_unsigned);
+        append_int_attr(s, "max_val", thdlocal() ? u.thd_ulong.max_val : u.sys_ulong.max_val, is_unsigned);
         break;
     }
     case PLUGIN_VAR_LONGLONG: {
         append_attr(s, "type", is_unsigned ? "ulonglong" : "longlong");
         s.append(",");
-        append_numeric_attr(s, "def_val", thdlocal() ? u.thd_ulonglong.def_val : u.sys_ulonglong.def_val, is_unsigned);
+        append_int_attr(s, "def_val", thdlocal() ? u.thd_ulonglong.def_val : u.sys_ulonglong.def_val, is_unsigned);
         s.append(",");
-        append_numeric_attr(s, "min_val", thdlocal() ? u.thd_ulonglong.min_val : u.sys_ulonglong.min_val, is_unsigned);
+        append_int_attr(s, "min_val", thdlocal() ? u.thd_ulonglong.min_val : u.sys_ulonglong.min_val, is_unsigned);
         s.append(",");
-        append_numeric_attr(s, "max_val", thdlocal() ? u.thd_ulonglong.max_val : u.sys_ulonglong.max_val, is_unsigned);
+        append_int_attr(s, "max_val", thdlocal() ? u.thd_ulonglong.max_val : u.sys_ulonglong.max_val, is_unsigned);
         break;
     }
     case PLUGIN_VAR_ENUM: {
@@ -190,6 +198,12 @@ String fake_st_mysql_sys_var::type_attributes() {
     }
     case PLUGIN_VAR_DOUBLE: {
         append_attr(s, "type", "double");
+        s.append(",");
+        append_double_attr(s, "def_val", thdlocal() ? u.thd_double.def_val : u.sys_double.def_val);
+        s.append(",");
+        append_double_attr(s, "min_val", thdlocal() ? u.thd_double.min_val : u.sys_double.min_val);
+        s.append(",");
+        append_double_attr(s, "max_val", thdlocal() ? u.thd_double.max_val : u.sys_double.max_val);
         break;
     }
     default:
