@@ -19,11 +19,33 @@ static char *tokudb_variables_version;
 static MYSQL_SYSVAR_STR(version, tokudb_variables_version, PLUGIN_VAR_NOCMDARG | PLUGIN_VAR_READONLY, "version example",
                         NULL, NULL, "0.1");
 
-static MYSQL_THDVAR_ULONG(ulong, 0, "ulong example", NULL, NULL, 42, 0, 1<<24, 1);
+static MYSQL_THDVAR_ULONG(ulong_example, 0, "ulong example", NULL, NULL, 42, 0, 1<<24, 1);
+
+static MYSQL_THDVAR_DOUBLE(double_example, 0, "double example", NULL /*check*/, NULL /*update*/, 1.0 /*def*/, 0 /*min*/, 1.0 /*max*/, 1);
+
+static const char *enum_example_names[] = {
+    "uncompressed",
+    "zlib",
+    "quicklz",
+    "lzma",
+    NullS
+};
+
+static TYPELIB enum_example_typelib = {
+    array_elements(enum_example_names) - 1,
+    "enum_example_typelib",
+    enum_example_names,
+    NULL
+};
+
+
+static MYSQL_THDVAR_ENUM(enum_example, 0, "enum example", NULL, NULL, 1, &enum_example_typelib);
 
 static struct st_mysql_sys_var *tokudb_variables_variables[] = {
     MYSQL_SYSVAR(version),
-    MYSQL_SYSVAR(ulong),
+    MYSQL_SYSVAR(ulong_example),
+    MYSQL_SYSVAR(double_example),
+    MYSQL_SYSVAR(enum_example),
     NULL,
 };
 
@@ -112,6 +134,8 @@ struct fake_st_mysql_sys_var {
         thdvar_ulonglong_t thd_ulonglong;
         sysvar_double_t sys_double;
         thdvar_double_t thd_double;
+        sysvar_enum_t sys_enum;
+        thdvar_enum_t thd_enum;
     } u;
 
     const char *name();
@@ -190,6 +214,19 @@ String fake_st_mysql_sys_var::type_attributes() {
     }
     case PLUGIN_VAR_ENUM: {
         append_attr(s, "type", "enum");
+        TYPELIB *typelib = thdlocal() ? u.thd_enum.typelib : u.sys_enum.typelib;
+        s.append(",");
+        append_attr(s, "def_val", typelib->type_names[thdlocal() ? u.thd_enum.def_val : u.sys_enum.def_val]);
+        s.append(",");
+        String t;
+        t.append("[");
+        for (unsigned int i = 0; i < typelib->count; i++) {
+            t.append("\""); t.append(typelib->type_names[i]); t.append("\"");
+            if (i < typelib->count-1)
+                t.append(",");
+        }
+        t.append("]");
+        append_attr(s, "val", true, t.c_ptr(), false);
         break;
     }
     case PLUGIN_VAR_SET: {
